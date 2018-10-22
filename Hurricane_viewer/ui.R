@@ -6,12 +6,16 @@ shinyUI(dashboardPage(
   dashboardHeader(title = 'Hurricane Viewer'),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Year", icon = icon("calendar"),
+      menuItem("Year", startExpanded = TRUE,icon = icon("calendar"),
                # Input directly under menuItem
         selectInput("inputYear", "Input Year", choices = append(c(''),year_list)),
         hr(),
         fluidRow(
-          column(12, verbatimTextOutput("year"))
+          column(12, verbatimTextOutput("year")),
+        fluidRow(
+          column(12, verbatimTextOutput("layerIds"))
+        )
+        
         )
       )         
     )
