@@ -1,37 +1,45 @@
-library(shiny)
-
 shinyServer(function(input, output, session){
   output$year <- renderPrint({ input$inputYear })
-  #output$layerIds = renderPrint({layer_list})
   
   output$my_map <- renderLeaflet({
     map = leaflet() %>%
       addTiles(options = tileOptions(noWrap = TRUE)) %>%
-      setView(-80, 30, zoom = 4)
+      setView(-70, 30, zoom = 5)
   })
   
-  values = reactiveValues()
-  values$layer_list = list()
+  rv = reactiveValues()
+  rv$group_list = list()
+  
+  session$onSessionEnded(stopApp)
+  
+  observeEvent(input$animate, {
+    output$current_time = renderPrint({input$animate})
+  })
   
   observeEvent(input$inputYear,{
-    print(str_interp('Input year changed to ${input$inputYear}'))
-    temp = hu_df %>%
+    year_df = hu_df %>%
       filter(year == input$inputYear)
     proxy = leafletProxy('my_map')
     
-    for (i in isolate(values$layer_list)) {
-      proxy %>% removeShape(layerId = i)
-      values$layer_list = list()
-    }
+    # Remove all shapes previously drawn on the proxy map
+    clearShapes(proxy)
     
-    for (i in unique(temp$storm_num)){
-      #layerId = str_interp('${input$inputYear}:${i}')
-      values$layer_list = append(isolate(values$layer_list),layerId)
-      proxy %>% addPolylines(data = temp[temp$storm_num ==i, ], ~longitude, ~latitude, layerId = layerId)
-      #addMarkers(lng = temp[1, 'longitude'], lat = temp[1, 'latitude'], group = 'storm_num')
+    # Reset list of groups
+    rv$group_list = list()
+    #rv$date_list = unique(hu_df[year == input$inputYear, 'time'])
+    rv$cur_date = 1
+    
+    
+    for (i in unique(year_df$storm_num)){
+      groupId = paste0(input$inputYear,':',i)
+      rv$group_list = append(isolate(rv$group_list),groupId)
+      temp_df = year_df %>% filter(storm_num == i) 
+
+      proxy %>% addPolylines(data=temp_df,lng = ~longitude, lat = ~latitude, 
+                             group = groupId) %>%
+      addCircles(data = temp_df, ~longitude, ~latitude, group = groupId, 
+                 color = ~color, popup = ~popup_string, radius = 11000)
     }
-    #set_previous_layer_list(layer_list)
-                 
-  #      addProviderTiles("Esri.WorldStreetMap")
+    #output$group_list = renderPrint({isolate(rv$group_list)})
   })
 })

@@ -1,7 +1,3 @@
-library(shiny)
-library(shinydashboard)
-library(leaflet)
-
 shinyUI(dashboardPage(
   dashboardHeader(title = 'Hurricane Viewer'),
   dashboardSidebar(
@@ -11,19 +7,23 @@ shinyUI(dashboardPage(
         selectInput("inputYear", "Input Year", choices = append(c(''),year_list)),
         hr(),
         fluidRow(
-          column(12, verbatimTextOutput("year")),
+          column(12, verbatimTextOutput("year"))
+        ),
+        hr(),
         fluidRow(
-          column(12, verbatimTextOutput("layerIds"))
-        )
-        
+          sliderInput('animate', 'Time to animate', min = 0, max = 3, value = 0 )
+        ),
+        hr(),
+        fluidRow(
+          column(12, verbatimTextOutput('current_time'))
         )
       )         
     )
   ),
   dashboardBody(
-    fluidRow(
+    fillPage(
       title = 'Current Hurricane',
-      leafletOutput("my_map")
+      leafletOutput("my_map", height = 800)
     )
   )
 ))

@@ -10,6 +10,7 @@ hu_df = data.frame(name = character(),
                    year = numeric(),
                    time = double(),
                    intensity = character(),
+                   intensity_string = character(),
                    longitude = numeric(),
                    latitude = numeric(),
                    max_wind = numeric(),
@@ -35,7 +36,7 @@ while (i <= length(h_lines)) {
   if (grepl('^AL', curline)){
     match_string = str_match(curline, '^AL(\\d{2})\\d{4},\\s+(\\S+),\\s+(\\d+)')
     storm_num = match_string[2]
-    name = match_string[3]
+    name = paste0(substring(match_string[3], 1,1), tolower(substring(match_string[3],2)))
     num_rows = as.numeric(match_string[4])
     
     for (j in (i+1):(i+num_rows)) {
@@ -52,6 +53,9 @@ while (i <= length(h_lines)) {
       match_string = str_match(curline, ', (\\w{2}),\\s+(\\S+),\\s+(\\S+),\\s+(-?\\d+),\\s+(-?\\d+),')
                                  
       intensity = match_string[2]
+      intensity_string = case_when(intensity == 'HU' ~ 'Hurricane', 
+                                   intensity == 'TS' ~ 'Tropical Storm', 
+                                   intensity == 'TD' ~ 'Tropical Depression')
         
       lat_test = substr(match_string[3],nchar(match_string[3]),nchar(match_string[3]))
       lat = substr(match_string[3],1,nchar(match_string[3])-1)
@@ -87,6 +91,7 @@ while (i <= length(h_lines)) {
                            storm_num = as.numeric(storm_num),
                            time = strptime(time, '%m/%d/%Y %H:%M', tz='UTC'),
                            intensity = intensity,
+                           intensity_string = intensity_string,
                            longitude = longitude,
                            latitude = latitude,
                            max_wind = max_wind,
