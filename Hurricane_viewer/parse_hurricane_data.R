@@ -5,7 +5,7 @@ library(dplyr)
 
 h_lines = read_lines('./hurdat2-1851-2017-050118.txt')
 
-hu_df = data.frame(name = character(),
+parse_hu_df = data.frame(name = character(),
                    storm_num = numeric(),
                    year = numeric(),
                    time = double(),
@@ -55,7 +55,8 @@ while (i <= length(h_lines)) {
       intensity = match_string[2]
       intensity_string = case_when(intensity == 'HU' ~ 'Hurricane', 
                                    intensity == 'TS' ~ 'Tropical Storm', 
-                                   intensity == 'TD' ~ 'Tropical Depression')
+                                   intensity == 'TD' ~ 'Tropical Depression',
+                                   TRUE ~ paste0('Other:', intensity))
         
       lat_test = substr(match_string[3],nchar(match_string[3]),nchar(match_string[3]))
       lat = substr(match_string[3],1,nchar(match_string[3])-1)
@@ -110,7 +111,7 @@ while (i <= length(h_lines)) {
                            max_radii_64kt_nw = max_radii_64kt_nw,
                            stringsAsFactors = FALSE)
       
-      hu_df = rbind(hu_df, temp_df)
+      parse_hu_df = rbind(parse_hu_df, temp_df)
     }
     i = j+1
     if (i > count) {
@@ -119,5 +120,5 @@ while (i <= length(h_lines)) {
     }
   }
 }
-hu_df_filtered = hu_df %>% filter(intensity %in% c('TS','TD','HU'))
-write.csv(hu_df_filtered,file='./hurricane_data.csv',row.names = FALSE)
+#hu_df_filtered = hu_df %>% filter(intensity %in% c('TS','TD','HU'))
+write.csv(parse_hu_df,file='./hurricane_data.csv',row.names = FALSE)
