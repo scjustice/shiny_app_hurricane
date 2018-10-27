@@ -53,10 +53,6 @@ while (i <= length(h_lines)) {
       match_string = str_match(curline, ', (\\w{2}),\\s+(\\S+),\\s+(\\S+),\\s+(-?\\d+),\\s+(-?\\d+),')
                                  
       intensity = match_string[2]
-      intensity_string = case_when(intensity == 'HU' ~ 'Hurricane', 
-                                   intensity == 'TS' ~ 'Tropical Storm', 
-                                   intensity == 'TD' ~ 'Tropical Depression',
-                                   TRUE ~ paste0('Other:', intensity))
         
       lat_test = substr(match_string[3],nchar(match_string[3]),nchar(match_string[3]))
       lat = substr(match_string[3],1,nchar(match_string[3])-1)
@@ -69,6 +65,15 @@ while (i <= length(h_lines)) {
       max_wind = ifelse(match_string[5] == -99, NaN, as.numeric(match_string[5]))
       min_pressure = ifelse(match_string[6] == '-999', NaN, as.numeric(match_string[6]))
       
+      intensity_string = case_when(intensity == 'HU' ~ paste0('Hurricane: ',
+                                      case_when(max_wind >= 137 ~ 'Cat5',
+                                               (max_wind >= 113 & max_wind < 137) ~ 'Cat4',
+                                               (max_wind >=  96 & max_wind < 113) ~ 'Cat3',
+                                               (max_wind >=  83 & max_wind <  96) ~ 'Cat2',
+                                               (max_wind >=  64 & max_wind <  83) ~ 'Cat1')), 
+                                   intensity == 'TS' ~ 'Tropical Storm', 
+                                   intensity == 'TD' ~ 'Tropical Depression',
+                                   TRUE ~ paste0('Other:', intensity))
       # match the max radii values
       match_string = str_match(curline, ',\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s+(-?\\d+),\\s*$')
       
@@ -120,5 +125,24 @@ while (i <= length(h_lines)) {
     }
   }
 }
+
+get_max_intensity = function(intensity, max_wind) {
+  if ('HU' %in% intensity) {
+    storm_max_wind = max(max_wind)
+    ret_val = case_when(storm_max_wind >= 137 ~ 'Hurricane: Cat5',
+                        (storm_max_wind >= 113 & storm_max_wind < 137) ~ 'Hurricane: Cat4',
+                        (storm_max_wind >=  96 & storm_max_wind < 113) ~ 'Hurricane: Cat3',
+                        (storm_max_wind >=  83 & storm_max_wind <  96) ~ 'Hurricane: Cat2',
+                        (storm_max_wind >=  64 & storm_max_wind <  83) ~ 'Hurricane: Cat1')
+  } else if ('TS' %in% intensity) ret_val = 'Tropical Storm'
+  else ret_val = 'Tropical Depression'
+  return(ret_val)
+}
+
+parse_hu_df = parse_hu_df %>% 
+              group_by(year, storm_num) %>%
+              mutate(max_intensity = get_max_intensity(intensity, max_wind))
+              
+
 #hu_df_filtered = hu_df %>% filter(intensity %in% c('TS','TD','HU'))
 write.csv(parse_hu_df,file='./hurricane_data.csv',row.names = FALSE)

@@ -2,22 +2,20 @@ shinyUI(dashboardPage(
   dashboardHeader(title = 'Hurricane Viewer'),
   dashboardSidebar(
     sidebarMenu( id = 'tabs',
-      menuItem('Data', startExpanded = TRUE, tabName = 'Data', icon= icon("signal")),
+      menuItem('Data', tabName = 'Data', icon= icon("signal")),
       menuItem("Map", tabName = 'Map', icon = icon("calendar")),
                # Input directly under menuItem
-      selectInput("inputYear", "Input Year", choices = append(c(''),year_list)),
       hr(),
-      fluidRow(
-        column(12, verbatimTextOutput("year"))
-      ),
+      radioButtons("radio", label = h4("Analyze by:"),
+                   choices = list("Year" = 1, "Name" = 2, "Category" = 3), 
+                   selected = 1),
+      uiOutput('menu_select'),
+      checkboxInput('option_1967','Since 1967 only'),
       hr(),
       fluidRow(
         sliderInput('animate', 'Time to animate', min = 0, max = 3, value = 0 )
       ),
-      hr(),
-      fluidRow(
-        column(12, verbatimTextOutput("current_time"))
-      )         
+      fluidRow(column(12, verbatimTextOutput("menu_items")))
     )
   ),
   dashboardBody(
@@ -32,11 +30,15 @@ shinyUI(dashboardPage(
       tabItem(tabName = 'Data',
         fillPage(
           title = 'Hurricane Data',
-          h3('Data plots go here'),
           box(
-            plotOutput('plot')
+            plotOutput('plot1')
+          ),
+          conditionalPanel(
+            condition = "input['option_1967'] == true",
+            box(
+              plotOutput('plot2')
+            )
           )
-          
         )
       )
     )
