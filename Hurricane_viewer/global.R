@@ -20,7 +20,7 @@ year_list = unique(hu_df[,'year'])
 year_list = 1851:2017
 
 year_list_1950 = 1950:2017
-year_list_1967 = 1967:2017
+year_list_1967 = c('All', 1967:2017)
 
 name_list = (hu_df %>% 
   group_by(year, storm_num)  %>% 
