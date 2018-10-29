@@ -19,7 +19,13 @@ shinyServer(function(input, output, session){
       need(input$menuInput != "", 'Please make selection for analysis')
     )
     return(input$menuInput)
-    
+  })
+  
+  get_cur_df = reactive({
+    validate(
+      need(!is.null(rv$cur_df), 'Please make selection for analysis')
+    )
+    return(rv$cur_df)
   })
   
   session$onSessionEnded(stopApp)
@@ -69,15 +75,12 @@ shinyServer(function(input, output, session){
   })
   
   get_name_list = function(cur_df, isMaxWind){
-    if (!is.null(rv$cur_df)){
-      temp_df = rv$cur_df %>% filter(if (isMaxWind) !is.na(max_wind) else !is.na(min_pressure))
+      temp_df = get_cur_df() %>% filter(if (isMaxWind) !is.na(max_wind) else !is.na(min_pressure))
       temp_df['new_name'] = mapply(new_name_helper, (length(get_menu_input)==1), 
                                    temp_df$name, temp_df$storm_num, temp_df$year)
-      }
   }
   
   render_wind_data = reactive({
-    if (!is.null(rv$cur_df)) {
       if( 'All' %in% get_menu_input()){
         cur_df = hu_df %>% filter(year >= 1967) %>%
           select(year, storm_num, max_intensity) %>% distinct()
@@ -87,7 +90,7 @@ shinyServer(function(input, output, session){
           theme(axis.text.x = element_text(angle = 90, 
                                            size = rel(1.3), vjust = 0.5))
       } else if (length(get_menu_input()) < 3){
-        cur_df = rv$cur_df %>% filter(!is.na(max_wind))
+        cur_df = get_cur_df() %>% filter(!is.na(max_wind))
         cur_df['new_name'] = mapply(new_name_helper, (length(get_menu_input())==1), 
                                     cur_df$name, cur_df$storm_num, cur_df$year)
         name_list = unique(cur_df$new_name)
@@ -103,9 +106,8 @@ shinyServer(function(input, output, session){
                                   size = rel(1.3), vjust = 0.5)) +
         labs(x = paste0('Storm Name ', '(', get_menu_input(), ')'), y='Maximum Wind Speed (knots)') +
         theme(axis.title = element_text(size = rel(1.5), margin = 20))
-      
       } else {
-        cur_df = rv$cur_df %>% select(year, storm_num, max_intensity) %>% distinct()
+        cur_df = get_cur_df() %>% select(year, storm_num, max_intensity) %>% distinct()
         cur_df$max_intensity = factor(cur_df$max_intensity, levels = intensity_list)
         cur_df$year = factor(cur_df$year)
         g = ggplot(data=cur_df) + geom_bar(aes(x=year, fill=max_intensity)) + theme_economist() + 
@@ -113,16 +115,21 @@ shinyServer(function(input, output, session){
                                                                    size = rel(1.3), vjust = 0.5))
       }
       return(g)
-    }
   })
   
   render_pressure_data = reactive({
-    if (!is.null(rv$cur_df)) {
-#      if ('All' %in% get_menu_input()){
-#        
-#      }
-      if (length(get_menu_input()) < 3){
-        cur_df = rv$cur_df %>% filter(!is.na(min_pressure))
+      if ('All' %in% get_menu_input()){
+        cur_df = hu_df %>% 
+          filter(year >= 1967 & !is.na(min_pressure)) %>% 
+          select(year, storm_num, min_pressure) %>% 
+          group_by(year, storm_num) %>% 
+          summarise(storm_min_pressure = min(min_pressure)) 
+        cur_df$year = factor(cur_df$year)
+        g = ggplot(data=cur_df) + geom_boxplot(aes(x=year, y=storm_min_pressure)) + theme_economist() + 
+          theme(axis.text.x = element_text(angle = 90, 
+                                           size = rel(1.3), vjust = 0.5))
+      } else if (length(get_menu_input()) < 3){
+        cur_df = get_cur_df() %>% filter(!is.na(min_pressure))
         cur_df['new_name'] = mapply(new_name_helper, (length(get_menu_input())==1), 
                                     cur_df$name, cur_df$storm_num, cur_df$year)
         name_list = unique(cur_df$new_name)
@@ -140,7 +147,7 @@ shinyServer(function(input, output, session){
           theme(axis.title = element_text(size = rel(1.5), margin = 20))
         
       } else {
-        cur_df = rv$cur_df %>% 
+        cur_df = get_cur_df() %>% 
           filter(!is.na(min_pressure)) %>% 
           select(year, storm_num, max_intensity, min_pressure) %>% 
           group_by(year, storm_num) %>%
@@ -156,7 +163,6 @@ shinyServer(function(input, output, session){
                                            size = rel(1.3), vjust = 0.5))
       }
       return(g)
-    }
   })
   
   render_map_proxy = reactive({
@@ -170,7 +176,7 @@ shinyServer(function(input, output, session){
     #rv$date_list = unique(hu_df[year == get_menu_input(), 'time'])
     rv$cur_date = 1
     
-    cur_df = rv$cur_df
+    cur_df = get_cur_df()
     for (i in unique(cur_df$storm_num)){
       groupId = paste0(get_menu_input(),':',i)
       rv$group_list = append(rv$group_list,groupId)
@@ -209,8 +215,8 @@ shinyServer(function(input, output, session){
   
   observeEvent(input$animate, {
     output$current_time = renderPrint(({input$tabs}))
-      cur_df = rv$cur_df
-      rv$date_list = unique(rv$cur_df[,'time'])
+      cur_df = get_cur_df()
+      rv$date_list = unique(cur_df[,'time'])
       #output$current_time = renderPrint({rv$date_list[input$animate]})
       #output$current_time = renderPrint({input$tabs})
   })

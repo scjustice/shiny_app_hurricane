@@ -16,10 +16,7 @@ hu_df = hu_df %>% mutate(color = case_when(intensity == 'HU' ~ 'red',
                                            intensity == 'TD' ~ 'yellow',
                                            TRUE ~ 'gray'))
 
-year_list = unique(hu_df[,'year'])
 year_list = 1851:2017
-
-year_list_1950 = 1950:2017
 year_list_1967 = c('All', 1967:2017)
 
 name_list = (hu_df %>% 
@@ -34,20 +31,6 @@ name_list = (hu_df %>%
   select(new_name))[[1]]
 
 name_list = sort(name_list)
-
-name_list_1950 = (hu_df %>% 
-                   filter(year > 1950) %>%
-                   group_by(year, storm_num)  %>% 
-                   select(name, year, storm_num) %>% 
-                   distinct() %>% 
-                   summarise(new_name = if_else(name == 'Unnamed', 
-                                                paste0('Unnamed:', storm_num, ' (', year, ')'), 
-                                                paste0(name, ' (', year,')' ))) %>% 
-                   ungroup() %>%
-                   distinct() %>%
-                   select(new_name))[[1]]
-
-name_list_1950 = sort(name_list_1950)
 
 name_list_1967 = (hu_df %>% 
                     filter(year > 1967) %>%
