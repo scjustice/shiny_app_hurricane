@@ -92,7 +92,7 @@ shinyServer(function(input, output, session){
           summarise(count = n())
         temp_df$max_intensity = factor(temp_df$max_intensity, levels = intensity_list)
         g = ggplot(data = temp_df) + geom_line(aes(x = year, y=count, 
-                                                   color= max_intensity, group=max_intensity)) +
+                                                   color= max_intensity, group=max_intensity, size=1.5)) +
           theme_economist() + theme(axis.text.x = element_text(angle = 90, 
                                                                size = rel(1.3), vjust = 0.5))
       } else if (length(get_menu_input()) < 3){
@@ -152,6 +152,14 @@ shinyServer(function(input, output, session){
                                                                     vjust = 0.5))
     } else if ('All' %in% get_menu_input()){
         cur_df = hu_prop_df %>% 
+          select(c('year',
+                   'Hurricane: Cat5' = cat5_prop, 
+                   'Hurricane: Cat4' = cat4_prop, 
+                   'Hurricane: Cat3' = cat3_prop, 
+                   'Hurricane: Cat2' = cat2_prop, 
+                   'Hurricane: Cat1' = cat1_prop, 
+                   'Tropical Storm' = ts_prop, 
+                   'Tropical Depression' = td_prop)) %>%
           filter(year >= 1967) %>% 
           gather(key, value, -year) 
         cur_df$key = factor(cur_df$key, levels = intensity_list)

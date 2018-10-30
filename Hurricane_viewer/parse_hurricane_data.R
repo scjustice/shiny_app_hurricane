@@ -148,6 +148,14 @@ parse_hu_df = parse_hu_df %>%
 write.csv(parse_hu_df,file='./hurricane_data.csv',row.names = FALSE)
 
 # Difference between times
+intensity_list = c('Hurricane: Cat5',
+                   'Hurricane: Cat4',
+                   'Hurricane: Cat3',
+                   'Hurricane: Cat2', 
+                   'Hurricane: Cat1',
+                   'Tropical Storm',
+                   'Tropical Depression')
+
 hu_prop_df = data.frame(year = numeric(),
                     'Hurricane: Cat5' = numeric(), 
                     'Hurricane: Cat4' = numeric(), 
@@ -157,61 +165,64 @@ hu_prop_df = data.frame(year = numeric(),
                     'Tropical Storm' = numeric(),
                     'Tropical Depression' = numeric())
 
-intensity_list = c('Hurricane: Cat5',
-                   'Hurricane: Cat4',
-                   'Hurricane: Cat3',
-                   'Hurricane: Cat2', 
-                   'Hurricane: Cat1',
-                   'Tropical Storm',
-                   'Tropical Depression')
-
 for (cur_year in 1851:2017) {
   
-  temp_df = parse_hu_df %>% 
-    filter(year == cur_year & intensity_string %in% intensity_list) %>% 
-    select(storm_num, intensity_string, date_time)
+  temp_df = parse_hu_df %>% filter(year == cur_year & intensity_string %in% intensity_list) %>% select(year, storm_num, intensity_string, date_time)
+  
   temp_dict = list('Hurricane: Cat5' = 0, 'Hurricane: Cat4' = 0, 'Hurricane: Cat3' = 0,
                    'Hurricane: Cat2' = 0, 'Hurricane: Cat1' = 0, 'Tropical Storm' = 0,
-                   'Tropical Depression' = 0)
-  year_sum = 0
-#  print(paste0('Cur_year = ', cur_year))
+                   'Tropical Depression' = 0, 'max_storm_num' = 0)
+  year_total = 0
+  temp_dict['max_storm_num'] = (temp_df %>% 
+                                  group_by(year) %>%
+                                  summarise(max_storm_num = max(storm_num)) %>% 
+                                  as.list())$max_storm_num
+  print(paste0('Cur_year = ', cur_year))
   for (cur_storm in unique(temp_df$storm_num)){
     temp_matrix = temp_df %>% filter(storm_num == cur_storm) %>% as.matrix.data.frame()
     cur_intensity = temp_matrix[1,'intensity_string']
     start_time = temp_matrix[1,'date_time']
     if (nrow(temp_matrix) == 1){
       temp_dict[cur_intensity] = temp_dict[[cur_intensity]] + 6
+      year_total = year_total +6
     } else{
       for ( i in 2:nrow(temp_matrix)) {
+        #print(paste0('cur_row = ',i))
         if (temp_matrix[i, 'intensity_string'] != cur_intensity) {
           temp_dict[[cur_intensity]] = temp_dict[[cur_intensity]] + 
             as.numeric(difftime(temp_matrix[i,'date_time'],start_time), unit= 'hours')
+          year_total = year_total + as.numeric(difftime(temp_matrix[i,'date_time'],
+                                                        start_time), unit= 'hours')
+          
           cur_intensity = temp_matrix[i,'intensity_string']
           start_time = temp_matrix[i,'date_time']
         } else if (i == nrow(temp_matrix)) {
           temp_dict[[cur_intensity]] = temp_dict[[cur_intensity]] + 
             as.numeric(difftime(temp_matrix[i,'date_time'], start_time), unit= 'hours')
+          year_total = year_total + as.numeric(difftime(temp_matrix[i,'date_time'],
+                                                        start_time), unit= 'hours')
         }
       }
     }
   }
+  temp_dict['year_total'] = year_total
   hu_prop_df = rbind(hu_prop_df, data.frame(year=cur_year, temp_dict))
 }
 
-hu_prop_df$storm_total = rowSums(hu_prop_df) - hu_prop_df$year
-
-hu_prop_df = hu_prop_df %>% mutate(cat5_prop = Hurricane..Cat5/storm_total, 
-                            cat4_prop = Hurricane..Cat4/storm_total, 
-                            cat3_prop = Hurricane..Cat3/storm_total, 
-                            cat2_prop = Hurricane..Cat2/storm_total, 
-                            cat1_prop = Hurricane..Cat1/storm_total, 
-                            ts_prop = Tropical.Storm/storm_total, 
-                            td_prop = Tropical.Depression/storm_total) %>%
-                    select(year, cat5_prop, cat4_prop, cat3_prop, 
-                           cat2_prop, cat1_prop, ts_prop, td_prop)
-
-colnames(hu_prop_df) = c('year', 'Hurricane: Cat5', 'Hurricane: Cat4', 
-                      'Hurricane: Cat3', 'Hurricane: Cat2', 'Hurricane: Cat1', 
-                      'Tropical Storm', 'Tropical Depression')
+hu_prop_df = hu_prop_df %>% transmute(year,
+                               cat5_prop = Hurricane..Cat5/year_total, 
+                               cat5_avg = Hurricane..Cat5/max_storm_num,
+                               cat4_prop = Hurricane..Cat4/year_total, 
+                               cat4_avg = Hurricane..Cat4/max_storm_num,
+                               cat3_prop = Hurricane..Cat3/year_total, 
+                               cat3_avg = Hurricane..Cat3/max_storm_num,
+                               cat2_prop = Hurricane..Cat2/year_total, 
+                               cat2_avg = Hurricane..Cat2/max_storm_num,
+                               cat1_prop = Hurricane..Cat1/year_total, 
+                               cat1_avg = Hurricane..Cat1/max_storm_num,
+                               ts_prop = Tropical.Storm/year_total, 
+                               ts_avg = Tropical.Storm/max_storm_num,
+                               td_prop = Tropical.Depression/year_total, 
+                               td_avg = Tropical.Depression/max_storm_num)
 
 write.csv(hu_prop_df,file='./hurricane_proportion_data.csv',row.names = FALSE)

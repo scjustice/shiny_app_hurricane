@@ -15,7 +15,7 @@ shinyUI(dashboardPage(
       conditionalPanel(
         condition = 'input["tabs"] == "Map"',
         fluidRow(
-          sliderInput('animate', 'Time to animate', min = 0, max = 3, value = 0, animate = TRUE )
+          sliderInput('animate', 'Time to animate', min = 0, max = 3, value = 0, step = 1, animate = TRUE )
         )
       ),
       fluidRow(column(12, verbatimTextOutput("animate_time")))

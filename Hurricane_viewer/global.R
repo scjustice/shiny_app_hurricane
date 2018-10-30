@@ -13,10 +13,6 @@ library(tidyr)
 hu_df = read.csv('./hurricane_data.csv', stringsAsFactors = FALSE)
 hu_prop_df = read.csv('./hurricane_proportion_data.csv', stringsAsFactors = FALSE)
 
-colnames(hu_prop_df) = c('year', 'Hurricane: Cat5', 'Hurricane: Cat4', 
-                         'Hurricane: Cat3', 'Hurricane: Cat2', 'Hurricane: Cat1', 
-                         'Tropical Storm', 'Tropical Depression')
-
 hu_df = hu_df %>% mutate(color = case_when(intensity == 'HU' ~ 'red',
                                            intensity == 'TS' ~ 'orange',
                                            intensity == 'TD' ~ 'yellow',
