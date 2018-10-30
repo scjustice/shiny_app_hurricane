@@ -12,7 +12,9 @@ shinyServer(function(input, output, session){
                       date_list = NULL, 
                       cur_filter = 'year',
                       cur_list = year_list,
-                      option_1967 = FALSE)
+                      option_1967 = FALSE,
+                      cur_data_select = 1,
+                      cur_map_select = 1)
 
   get_menu_input = reactive({
     validate(
@@ -21,6 +23,12 @@ shinyServer(function(input, output, session){
     return(input$menuInput)
   })
   
+#  get_radio = reactive({
+#    validate(
+#      need(input$radio) != '', 
+#    )
+#  })
+  
   get_cur_df = reactive({
     validate(
       need(!is.null(rv$cur_df), 'Please make selection for analysis')
@@ -28,7 +36,13 @@ shinyServer(function(input, output, session){
     return(rv$cur_df)
   })
   
+  get_cur_filter = function(){
+    if(rv$cur_filter == 'name') {}
+    
+  }
+  
   session$onSessionEnded(stopApp)
+  
   output$menu_select = renderUI({
     selectizeInput("menuInput", 
                    "Menu Input", choices = rv$cur_list,
@@ -39,38 +53,25 @@ shinyServer(function(input, output, session){
     return(input$option_1967)
   })
   
+  
   render_menu_select = reactive({
     if (get_option_1967()) {
       if (input$radio == 1) rv$cur_list = year_list_1967
-      else if (input$radio == 2) rv$cur_list = name_list_1967
-      else rv$cur_list = intensity_list
+      else rv$cur_list = name_list_1967
     } else {
       if (input$radio == 1) rv$cur_list = year_list
-      else if (input$radio == 2) rv$cur_list = name_list
-      else rv$cur_list = intensity_list
+      else rv$cur_list = name_list
     }
-    
-    if (input$radio != 3){
-      print(paste0('length of list is ', length(rv$cur_list)))
       output$menu_select = renderUI({
         selectizeInput("menuInput", 
                        "Menu Input", choices = rv$cur_list,
                        multiple = TRUE, options = list(maxItems = 10))
       }) 
-    } else {
-      print(paste0('length of list is ', length(rv$cur_list)))
-      output$menu_select = renderUI({
-        selectInput("menuInput", 
-                    "Menu Input", choices = rv$cur_list)
-      })
-    }
   })
   
   observeEvent(input$radio, {
     rv$cur_filter = case_when(input$radio == 1 ~ 'year',
-                              input$radio == 2 ~ 'name',
-                              input$radio == 3 ~ 'intensity_string')
-
+                              input$radio == 2 ~ 'name')
     render_menu_select()
   })
   
@@ -119,15 +120,15 @@ shinyServer(function(input, output, session){
   
   render_pressure_data = reactive({
       if ('All' %in% get_menu_input()){
-        cur_df = hu_df %>% 
-          filter(year >= 1967 & !is.na(min_pressure)) %>% 
-          select(year, storm_num, min_pressure) %>% 
-          group_by(year, storm_num) %>% 
-          summarise(storm_min_pressure = min(min_pressure)) 
-        cur_df$year = factor(cur_df$year)
-        g = ggplot(data=cur_df) + geom_boxplot(aes(x=year, y=storm_min_pressure)) + theme_economist() + 
-          theme(axis.text.x = element_text(angle = 90, 
-                                           size = rel(1.3), vjust = 0.5))
+        cur_df = hu_prop_df %>% 
+          filter(year >= 1967) %>% 
+          gather(key, value, -year) 
+        cur_df$key = factor(cur_df$key, levels = intensity_list)
+        g = ggplot(data=cur_df, aes(x=year, y=value, fill=key, group=key)) + geom_bar(stat='identity') +
+          theme_economist() + theme(axis.text.x = element_text(angle = 90,
+                                                               size = rel(1.3), vjust = 0.5)) +
+          labs(x = paste0('Storm Name ', '(', get_menu_input(), ')'), y='Minimum Pressure (millibars)') +
+          theme(axis.title = element_text(size = rel(1.5), margin = 20))
       } else if (length(get_menu_input()) < 3){
         cur_df = get_cur_df() %>% filter(!is.na(min_pressure))
         cur_df['new_name'] = mapply(new_name_helper, (length(get_menu_input())==1), 
@@ -147,23 +148,19 @@ shinyServer(function(input, output, session){
           theme(axis.title = element_text(size = rel(1.5), margin = 20))
         
       } else {
-        cur_df = get_cur_df() %>% 
-          filter(!is.na(min_pressure)) %>% 
-          select(year, storm_num, max_intensity, min_pressure) %>% 
-          group_by(year, storm_num) %>%
-          distinct() %>%
-          summarise(storm_min_pressure = min(min_pressure))
-        print('Before setting year as factor')
-        cur_df$year = factor(cur_df$year)
-        print('After setting year as factor')
-        
-        #cur_df$max_intensity = factor(cur_df$max_intensity, levels = intensity_list)
-        g = ggplot(data=cur_df) + geom_boxplot(aes(x=year, y=storm_min_pressure)) + theme_economist() + 
-          theme(axis.text.x = element_text(angle = 90, 
-                                           size = rel(1.3), vjust = 0.5))
+        cur_df = hu_prop_df %>% 
+          filter(year %in% get_menu_input()) %>% 
+          gather(key, value, -year) 
+        cur_df$key = factor(cur_df$key, levels = intensity_list)
+        g = ggplot(data=cur_df, aes(x=year, y=value, fill=key, group=key)) + geom_bar(stat='identity') +
+          theme_economist() + theme(axis.text.x = element_text(angle = 90,
+                                                               size = rel(1.3), vjust = 0.5)) +
+          labs(x = paste0('Storm Name ', '(', get_menu_input(), ')'), y='Minimum Pressure (millibars)') +
+          theme(axis.title = element_text(size = rel(1.5), margin = 20))
       }
       return(g)
   })
+  
   
   render_map_proxy = reactive({
     proxy = leafletProxy('my_map')
@@ -176,26 +173,34 @@ shinyServer(function(input, output, session){
     #rv$date_list = unique(hu_df[year == get_menu_input(), 'time'])
     rv$cur_date = 1
     
-    cur_df = get_cur_df()
-    for (i in unique(cur_df$storm_num)){
-      groupId = paste0(get_menu_input(),':',i)
-      rv$group_list = append(rv$group_list,groupId)
-      temp_df = cur_df %>% filter(storm_num == i) 
-      
-      proxy %>% addPolylines(data=temp_df,lng = ~longitude, lat = ~latitude, 
-                             group = groupId) %>%
-        addCircles(data = temp_df, ~longitude, ~latitude, group = groupId, 
-                   color = ~color, popup = ~popup_string, radius = 11000,
-                   fillOpacity= 0.6)
+    for (i in get_menu_input()){
+      for (j in unique((get_cur_df())$storm_num)){
+        groupId = paste0(i,':',j)
+        rv$group_list = append(rv$group_list,groupId)
+        temp_df = get_cur_df() %>% filter(eval(as.name(rv$cur_filter)) == i & storm_num == j) 
+        
+        proxy %>% addPolylines(data=temp_df,lng = ~longitude, lat = ~latitude, 
+                               group = groupId) %>%
+          addCircles(data = temp_df, ~longitude, ~latitude, group = groupId, 
+                     color = ~color, popup = ~popup_string, radius = 11000,
+                     fillOpacity= 0.6)
+      }
     }
+
     
   })
   
+  observeEvent(input$radio, {
+    if (input$tabs == 'Data') rv$cur_data_select = input$radio
+    else rv$cur_map_select = input$radio
+  })
+  
   observeEvent(input$tabs, {
-    print('Working on tabs')
+    #print('Working on tabs')
     if (input$tabs == 'Data'){
         output$plot1 = renderPlot(
           render_wind_data()
+          
         )
         output$plot2 = renderPlot(
           render_pressure_data()
@@ -224,6 +229,7 @@ shinyServer(function(input, output, session){
   observeEvent(input$option_1967, {
       rv$option_1967 = input$option_1967
       render_menu_select()
+      render_map_proxy()
   })
   
 })

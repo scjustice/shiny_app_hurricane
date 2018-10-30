@@ -7,7 +7,7 @@ shinyUI(dashboardPage(
                # Input directly under menuItem
       hr(),
       radioButtons("radio", label = h4("Analyze by:"),
-                   choices = list("Year" = 1, "Name" = 2, "Category" = 3), 
+                   choices = list("Year" = 1, "Name" = 2), 
                    selected = 1),
       uiOutput('menu_select'),
       checkboxInput('option_1967','Since 1967 only'),
