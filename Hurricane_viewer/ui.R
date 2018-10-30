@@ -12,10 +12,13 @@ shinyUI(dashboardPage(
       uiOutput('menu_select'),
       checkboxInput('option_1967','Since 1967 only'),
       hr(),
-      fluidRow(
-        sliderInput('animate', 'Time to animate', min = 0, max = 3, value = 0 )
+      conditionalPanel(
+        condition = 'input["tabs"] == "Map"',
+        fluidRow(
+          sliderInput('animate', 'Time to animate', min = 0, max = 3, value = 0, animate = TRUE )
+        )
       ),
-      fluidRow(column(12, verbatimTextOutput("menu_items")))
+      fluidRow(column(12, verbatimTextOutput("animate_time")))
     )
   ),
   dashboardBody(

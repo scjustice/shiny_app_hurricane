@@ -82,6 +82,3 @@ new_name_helper = function(input_test, name, storm_num, year){
 hu_df['popup_string'] = mapply(get_popup_string, hu_df$name, hu_df$storm_num, 
                                hu_df$intensity_string, hu_df$max_wind, hu_df$min_pressure)
 
-calc_intensity_percent = function(date, intensity_list){
-  
-}
