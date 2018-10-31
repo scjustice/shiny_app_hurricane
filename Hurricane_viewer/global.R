@@ -10,8 +10,9 @@ library(tidyr)
 
 
 
-hu_df = read.csv('./hurricane_data.csv', stringsAsFactors = FALSE)
-hu_prop_df = read.csv('./hurricane_proportion_data.csv', stringsAsFactors = FALSE)
+hu_df = read.csv('./data/hurricane_data.csv', stringsAsFactors = FALSE)
+hu_prop_df = read.csv('./data/hurricane_proportion_data.csv', stringsAsFactors = FALSE)
+#ss_table = read.csv('saffir_simpson_table.csv', stringsAsFactors = FALSE)
 
 hu_df = hu_df %>% mutate(color = case_when(intensity == 'HU' ~ 'red',
                                            intensity == 'TS' ~ 'orange',
@@ -56,9 +57,10 @@ intensity_list = c('Hurricane: Cat5',
                    'Tropical Storm',
                    'Tropical Depression')
 
-get_popup_string = function(name, storm_num, intensity_string, max_wind, min_pressure){
+get_popup_string = function(name, storm_num, intensity_string, max_wind, min_pressure, date_time){
   if(name == 'Unnamed') name = paste(name,storm_num, sep = ':')
-  ret_val = paste0('Name = ', as.character(name),'<br>Intensity = ', intensity_string)
+  ret_val = paste0('Name = ', as.character(name),'<br>Intensity = ', intensity_string,
+                   '<br>', date_time)
   if(!is.na(max_wind)) ret_val = paste0(ret_val, '<br>Max Wind = ', max_wind)
   if(!is.na(min_pressure)) ret_val = paste0(ret_val, '<br>Min Pressure = ', min_pressure)
   return(ret_val)
@@ -76,5 +78,5 @@ new_name_helper = function(input_test, name, storm_num, year){
 
 
 hu_df['popup_string'] = mapply(get_popup_string, hu_df$name, hu_df$storm_num, 
-                               hu_df$intensity_string, hu_df$max_wind, hu_df$min_pressure)
+                               hu_df$intensity_string, hu_df$max_wind, hu_df$min_pressure, hu_df$date_time)
 
