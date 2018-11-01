@@ -80,3 +80,28 @@ new_name_helper = function(input_test, name, storm_num, year){
 hu_df['popup_string'] = mapply(get_popup_string, hu_df$name, hu_df$storm_num, 
                                hu_df$intensity_string, hu_df$max_wind, hu_df$min_pressure, hu_df$date_time)
 
+
+filter_helper_interactive = function(cur_filter, menu_input){
+  print('In filter helper')
+
+  if (cur_filter == 'year') {
+    return(paste0('year %in% ', list(menu_input)))
+  } else {
+    ret_list = list()
+    for (cur_input in menu_input) {
+      match_string = str_match(cur_input, '(\\w+):?\\(\\d+) \\((\\d+)')
+      if (match_string[3] == ''){
+        filter_term = paste0('(name == \'', match_string[2],  
+                             '\' & year == ', match_string[4], ')')
+      } else {
+        filter_term = paste0('(name == \'', match_string[2],  
+                             '\' & year == ', match_string[4], ')')
+      }
+
+      ret_list  = append(ret_list, filter_term) 
+    }
+    print(paste0('Filter helper filter = ', paste(ret_list, collapse = ' | ') ))
+    return(paste(ret_list, collapse = ' | '))
+  }
+}
+
