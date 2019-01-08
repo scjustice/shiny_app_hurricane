@@ -52,11 +52,16 @@ shinyUI(dashboardPage(
       ),
       tabItem(tabName = 'Info',
               fillPage(
-                h1('Have Hurricanes Increased in Intensity?'),
+                h1('Visualizing Hurricane Data'),
+                h3('Objective:'),
+                h4(p('I wanted to use R and the shiny framework to create a shiny app for exploring the hurricane 
+                     data and examining the trends of storm intensity to see if there has been any increase in 
+                     intensity.\nMore details can be found on this',a(href='https://nycdatascience.com/blog/student-works/visualizing-hurricane-data-with-shiny/',
+                   'blog post'))),
                 br(),
                 h3('Saffir-Simpson Scale'),
                 title = 'Hurricane Info',
-                img(src='images/ss_table.PNG', contentType = "image/png",
+                img(src='images/saffir-simpson-scale.PNG', contentType = "image/png",
                       width = 440, height = 270),
                 br(),
                 br(),
@@ -65,8 +70,7 @@ shinyUI(dashboardPage(
                 br(),
                 h4(p('Dataset provided by the National Hurricane Center '),
                    a(href='https://www.nhc.noaa.gov/data/','Link'))
-                
-              ))
+               ))
     )
   )
 ))
